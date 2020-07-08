@@ -1,0 +1,220 @@
+package com.paczka;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Scanner;
+import java.text.DecimalFormat;
+
+class Calculations {
+    private double words;
+    private double sentences;
+    private double characters;
+    private double syllables;
+    private double polysyllables;
+    private double charactersPer100Words;
+    private double sentencesPer100Words;
+    private DecimalFormat df;
+
+    public Calculations(String fileText) {
+        characters = fileText.replaceAll("\\s+", "").length();
+        sentences = fileText.trim().split("[.?!]").length;
+        words = fileText.split("\\s+").length;
+        charactersPer100Words = characters / words * 100;
+        sentencesPer100Words = sentences / words * 100;
+        df = new DecimalFormat("##.00");
+
+        int syllables = 0;
+        int polysyllables = 0;
+        for (String word : fileText.split("\\s+")) {
+            int lgth = word.length();
+            if (word.charAt(lgth - 1) == 'e') {
+                word = word.substring(0, lgth - 1);
+            } else if (Character.toString(word.charAt(lgth - 1)).matches("[.,!?]") && word.charAt(lgth - 2) == 'e') {
+                word = word.substring(0, lgth - 2);
+            }
+            int temp = 0;
+            for (int i = 0; i < word.length(); i++) {
+                String tempCharacter = Character.toString(word.charAt(i));
+                String nextTempCharacter = "";
+                if (i < word.length() - 1) {
+                    nextTempCharacter = Character.toString(word.charAt(i + 1));
+                }
+
+                if (!(tempCharacter.matches("(?i)[aeiouy]") && nextTempCharacter.matches("(?i)[aeiouy]")) &&
+                        (tempCharacter.matches("(?i)[aeiouy]"))) {
+                    syllables++;
+                    temp++;
+                }
+            }
+            if (temp == 0) {
+                syllables++;
+            }
+
+            if (temp > 2) {
+                polysyllables++;
+            }
+        }
+
+        this.syllables = syllables;
+        this.polysyllables = polysyllables;
+    }
+
+    public int automatedReadability() {
+        double result = 4.71 * (characters / words) + 0.5 * (words / sentences) - 21.43;
+        int age = calculateAge(result);
+        System.out.println("Automated Readability Index: " + df.format(result) + " (about " + age + " year olds)");
+        return age;
+    }
+
+    public int fleschKincaid() {
+        double result = 0.39 * (words / sentences) + 11.8 * (syllables / words) - 15.59;
+        int age = calculateAge(result);
+        System.out.println("Flesch–Kincaid readability tests: " + df.format(result) + " (about " + age + " year olds)");
+        return age;
+    }
+
+    public int smogIndex() {
+        double result = 1.043 * Math.sqrt(polysyllables * (30.0 / sentences)) + 3.1291;
+        int age = calculateAge(result);
+        System.out.println("Simple Measure of Gobbledygook: " + df.format(result) + " (about " + age + " year olds)");
+        return age;
+    }
+
+    public int colemanLiau() {
+        double result = 0.0588 * charactersPer100Words - 0.296 * sentencesPer100Words - 15.8;
+        int age = calculateAge(result);
+        System.out.println("Coleman–Liau index: " + df.format(result) + " (about " + age + " year olds)");;
+        return age;
+    }
+
+    public int calculateAge(double score) {
+        int intResult = (int) Math.round(score);
+        int age = 0;
+        switch (intResult) {
+            case 1:
+                age = 6;
+                break;
+            case 2:
+                age = 7;
+                break;
+            case 3:
+                age = 9;
+                break;
+            case 4:
+                age = 10;
+                break;
+            case 5:
+                age = 11;
+                break;
+            case 6:
+                age = 12;
+                break;
+            case 7:
+                age = 13;
+                break;
+            case 8:
+                age = 14;
+                break;
+            case 9:
+                age = 15;
+                break;
+            case 10:
+                age = 16;
+                break;
+            case 11:
+                age = 17;
+                break;
+            case 12:
+                age = 18;
+                break;
+            case 13:
+                age = 24;
+                break;
+            case 14:
+                age = 25;
+                break;
+            default:
+
+        }
+        return age;
+    }
+
+    public double getWords() {
+        return words;
+    }
+
+    public double getCharacters() {
+        return characters;
+    }
+
+    public double getSentences() {
+        return sentences;
+    }
+
+    public double getSyllables() {
+        return syllables;
+    }
+
+    public double getPolysyllables() {
+        return polysyllables;
+    }
+}
+class Hyperskill {
+    public static String readFileAsString(String fileName) throws IOException {
+        return new String(Files.readAllBytes(Paths.get(fileName)));
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Collection<Integer> ages = new ArrayList<>();
+        String path = args[0];
+        String fileText = null;
+        boolean proceed = true;
+        try {
+            fileText = readFileAsString(path);
+        } catch (IOException e) {
+            System.out.println("Cannot process file: " + e.getMessage());
+            proceed = false;
+        }
+
+        if (proceed) {
+            Calculations calculations = new Calculations(fileText);
+            System.out.println("Words: " + calculations.getWords());
+            System.out.println("Sentences: " + calculations.getSentences());
+            System.out.println("Characters: " + calculations.getCharacters());
+            System.out.println("Syllables: " + calculations.getSyllables());
+            System.out.println("Polysyllables: " + calculations.getPolysyllables());
+            System.out.println("Enter the score you want to calculate (ARI, FK, SMOG, CL, all): ");
+            switch (scanner.next()) {
+                case "ARI":
+                    ages.add(calculations.automatedReadability());
+                    break;
+                case "FK":
+                    ages.add(calculations.fleschKincaid());
+                    break;
+                case "SMOG":
+                    ages.add(calculations.smogIndex());
+                    break;
+                case "CL":
+                    ages.add(calculations.colemanLiau());
+                    break;
+                case "all":
+                    ages.add(calculations.automatedReadability());
+                    ages.add(calculations.fleschKincaid());
+                    ages.add(calculations.smogIndex());
+                    ages.add(calculations.colemanLiau());
+                    double temp = 0;
+                    for (Integer age : ages) {
+                        temp += age;
+                    }
+                    System.out.println("This text should be understood in average by " +  temp / 4.0 + " year olds.\n");
+                    break;
+                default:
+                    System.out.println("Wrong input");
+            }
+        }
+    }
+}
